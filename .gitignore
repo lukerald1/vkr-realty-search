@@ -27,6 +27,7 @@ backup*.py
 *.db
 .txt
 data/raw/
+data/
 
 # Local QA screenshots
 artifacts/

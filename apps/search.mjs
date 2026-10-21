@@ -1,8 +1,8 @@
 const numeric = value => value === null || value === '' || value === undefined ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 export function normalize(item) {
   const source = String(item.source || 'unknown');
-  const id = item.group_id ? `group:${item.group_id}` : `${source}:${item.source_id || item.url || item.address}`;
-  return { id, source, city: item.city, locality: item.locality, deal_type: item.deal_type,
+  const id = item.id || (item.group_id ? `group:${item.group_id}` : `${source}:${item.source_id || item.url || item.address}`);
+  return { id, source, city: item.city, region: item.region || null, locality: item.locality, deal_type: item.deal_type,
     realty_type: item.realty_type, rooms: numeric(item.rooms), price: numeric(item.price),
     area_total: numeric(item.area_total), area_kitchen: numeric(item.area_kitchen),
     floor: numeric(item.floor), floors_total: numeric(item.floors_total),
@@ -44,7 +44,8 @@ export function parseQuery(query) {
   if (/не последн[а-я]* этаж|не на последнем|без последнего/.test(text)) hard.floor_not_last = true;
   if (/аренд|снять|сниму/.test(text)) hard.deal_type = 'rent';
   if (/(?:^|\s)(?:дом|коттедж)(?:\s|$|[.,!?])/.test(text)) hard.realty_type = 'house';
-  if (/москв/.test(text)) hard.city = 'msk';
+  const outsideScope = /москв|мурино|кудров|ленинградск[а-я]* област|в казани|в сочи|в новосибирске/.test(text);
+  if (outsideScope) unknown.push('Проект ограничен Санкт-Петербургом: указана другая география');
   const unsupported = [
     [/тих|нешум|без шума/, 'Тишина и уровень шума'], [/светл|солнеч/, 'Освещённость квартиры'],
     [/парк|зелень|зеленый/, 'Близость парков'], [/школ|детск[а-я]* сад/, 'Школы и детские сады'],
@@ -54,7 +55,7 @@ export function parseQuery(query) {
   for (const [pattern, label] of unsupported) if (pattern.test(text)) unknown.push(label);
   if (!/петербург|питер|спб|москв/.test(text)) notes.push('Город по умолчанию — Санкт-Петербург');
   if (!/куп|продаж|аренд|снять|сниму/.test(text)) notes.push('Тип сделки по умолчанию — покупка');
-  return {hard, soft: [...new Set(soft)], unknown: [...new Set(unknown)], notes,
+  return {hard, outsideScope, soft: [...new Set(soft)], unknown: [...new Set(unknown)], notes,
     coverage: 'Прототип распознаёт основные шаблоны. Проверьте условия: остальные слова могут не учитываться.'};
 }
 
@@ -70,14 +71,18 @@ export function applyOverrides(profile, overrides = {}) {
     }
   }
   if ('city' in overrides) {
-    if (!['spb','msk'].includes(overrides.city)) throw new Error('Некорректный город');
-    hard.city = overrides.city;
+    if (overrides.city !== 'spb') throw new Error('Доступен только Санкт-Петербург');
+  }
+  if ('deal_type' in overrides) {
+    if (!['sale','rent'].includes(overrides.deal_type)) throw new Error('Некорректный тип сделки');
+    hard.deal_type = overrides.deal_type;
   }
   if ('metro_max' in hard) hard.metro_mode_f = 'walk';
   return {...profile, hard};
 }
 
 export function rankListings(raw, profile) {
+  if (profile.outsideScope) return [];
   const {hard, soft} = profile;
   const seen = new Set();
   return raw.map(normalize).filter(item => {
@@ -114,7 +119,7 @@ export function rankListings(raw, profile) {
 }
 
 export function metrapiParams(hard) {
-  const params = new URLSearchParams({limit:'50', dedupe:'true'});
+  const params = new URLSearchParams({limit:'50', dedupe:'true',region:'Санкт-Петербург'});
   for (const key of ['city','deal_type','realty_type','rooms','price_min','price_max','area_min','metro_max','metro_mode_f'])
     if (hard[key] !== undefined) params.set(key, String(hard[key]));
   for (const key of ['floor_not_first','floor_not_last']) if (hard[key]) params.set(key,'1');
