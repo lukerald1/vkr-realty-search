@@ -1,0 +1,32 @@
+# Secrets and local settings
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+.venv/
+venv/
+.idea/
+.vscode/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+.next/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+
+# Existing experiments and raw provider data: review before publication
+backup*/
+backup*.py
+*.jsonl
+*.cursor
+*.sqlite*
+*.db
+.txt
+data/raw/
+
+# Local QA screenshots
+artifacts/

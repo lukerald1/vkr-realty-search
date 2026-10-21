@@ -1,0 +1,13 @@
+{
+  "name": "vkr-realty-search",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Прототип поиска недвижимости на естественном языке",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env apps/server.mjs",
+    "dev": "node --env-file-if-exists=.env --watch apps/server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}
