@@ -18,7 +18,7 @@
 npm start
 ```
 
-Открыть http://127.0.0.1:3100. Без npm: `node --env-file-if-exists=.env apps/server.mjs`.
+Открыть http://127.0.0.1:3100. Без npm: `node --env-file-if-exists=.env apps/server.mjs`. В Windows можно запустить `start.cmd` двойным щелчком; он также умеет найти Node из установленного Codex runtime.
 
 По умолчанию читается локальный `test_spb_sale.jsonl` из корня. Если файла нет, приложение использует 12 **вымышленных учебных объектов**. Выгрузка не входит в Git. Её путь можно задать через `SNAPSHOT_PATH` в `.env`.
 
