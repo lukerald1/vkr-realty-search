@@ -6,7 +6,7 @@ if errorlevel 1 (
   if exist "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" (
     set "PROSTOR_NODE=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
   ) else (
-    echo Please install Node.js 22 or newer, then run this file again.
+    echo Please install Node.js 24 or newer, then run this file again.
     pause
     exit /b 1
   )

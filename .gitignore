@@ -27,6 +27,14 @@ backup*.py
 *.db
 .txt
 data/raw/
+data/
 
 # Local QA screenshots
 artifacts/
+
+# Local planning and design drafts
+designs/
+docs/career-roadmap.md
+docs/iteration-01.md
+docs/iteration-02.md
+apps/public/editorial.css

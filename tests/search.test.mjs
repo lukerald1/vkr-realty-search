@@ -1,7 +1,21 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {parseQuery,rankListings,applyOverrides,normalize,metrapiParams} from '../apps/search.mjs';
+import {parseQuery,rankListings,applyOverrides,normalize,metrapiParams,buildSearchProfile} from '../apps/search.mjs';
 const listing = (overrides={}) => ({source:'test',source_id:'1',city:'spb',deal_type:'sale',realty_type:'flat',rooms:1,price:10000000,area_total:40,metro_minutes:8,metro_mode:'walk',...overrides});
+
+test('filter mode uses explicit criteria only and preserves empty results',()=>{
+  const p=buildSearchProfile('Студия в Мурино до 1 млн с большой кухней',{rooms:1,price_max:12000000},'filters');
+  assert.equal(p.searchMode,'filters');assert.equal(p.hard.rooms,1);assert.equal(p.outsideScope,false);
+  assert.deepEqual(p.soft,[]);assert.equal(rankListings([listing()],p).length,1);
+  assert.equal(rankListings([listing()],buildSearchProfile('',{price_max:1},'filters')).length,0);
+  assert.throws(()=>buildSearchProfile('',{},'ai'));
+});
+
+test('text mode preserves unsupported conditions and mandatory limits',()=>{
+  const p=buildSearchProfile('Однушка до 12 млн с тихим двором');
+  assert.equal(p.searchMode,'text');assert.ok(p.unknown.includes('Тишина и уровень шума'));
+  assert.equal(rankListings([listing({price:13000000})],p).length,0);
+});
 
 test('Russian query separates mandatory limits, wishes and unsupported features',()=>{
   const parsed=parseQuery('Однушка до 12,5 миллионов, до 10 минут пешком до метро, с большой кухней и тихим двором');
