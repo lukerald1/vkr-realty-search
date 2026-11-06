@@ -21,7 +21,9 @@ export function openActivity(filename) {
       if(!record)return false;
       db.prepare('INSERT INTO events VALUES (?,?,?,?,?,?)').run(randomUUID(),session,new Date().toISOString(),searchId,listingId,type);return true;
     },
-    history(session){return db.prepare('SELECT id,created_at,query,total FROM searches WHERE session_id=? ORDER BY created_at DESC LIMIT 20').all(session);},
+    history(session){return db.prepare('SELECT id,created_at,query,total,profile FROM searches WHERE session_id=? ORDER BY created_at DESC LIMIT 20').all(session).map(({profile,...row})=>{
+      const p=JSON.parse(profile);return {...row,searchMode:p.searchMode||'text',filters:p.hard||{}};
+    });},
     close:()=>db.close()
   };
 }

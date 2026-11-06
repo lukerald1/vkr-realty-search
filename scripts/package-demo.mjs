@@ -4,12 +4,15 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {openCatalog,listingValues} from '../apps/catalog.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
-const target=path.join(root,'artifacts','prostor-mvp');
+const target=path.resolve(root,process.env.DEMO_OUTPUT||'artifacts/prostor-mvp');
+const artifactsRoot=path.join(root,'artifacts')+path.sep;
+if(!target.startsWith(artifactsRoot))throw new Error('DEMO_OUTPUT must stay inside artifacts');
 await mkdir(path.join(target,'apps','public'),{recursive:true});
 await mkdir(path.join(target,'data'),{recursive:true});
-for(const relative of ['package.json','start.cmd','apps/server.mjs','apps/search.mjs','apps/catalog.mjs','apps/activity.mjs','apps/geography.mjs','apps/metrapi.mjs','apps/demo.mjs','apps/public/index.html','apps/public/styles.css','apps/public/air.css','apps/public/app.js','apps/public/building.svg','apps/public/hero.png'])
+for(const relative of ['package.json','start.cmd','apps/server.mjs','apps/search.mjs','apps/extractor.mjs','apps/saved.mjs','apps/catalog.mjs','apps/activity.mjs','apps/geography.mjs','apps/metrapi.mjs','apps/demo.mjs','apps/public/index.html','apps/public/styles.css','apps/public/air.css','apps/public/app.js','apps/public/building.svg','apps/public/hero.png'])
   await copyFile(path.join(root,relative),path.join(target,relative));
 const source=openCatalog(path.join(root,'data','catalog.sqlite'));
+for(const file of ['infrastructure.mjs','locations.mjs','rental.mjs'])await copyFile(path.join(root,'apps',file),path.join(target,'apps',file));
 const dest=openCatalog(path.join(target,'data','catalog.sqlite'));
 try {
   const rows=['sale','rent'].flatMap(deal=>source.db.prepare("SELECT payload FROM listings WHERE deal_type=? AND rooms=1 AND price IS NOT NULL ORDER BY price,id LIMIT 60").all(deal));
@@ -25,8 +28,10 @@ try {
       insert.run(...values);
     }
     dest.db.prepare('INSERT OR REPLACE INTO catalog_meta VALUES (?,?)').run('import',JSON.stringify({accepted:rows.length,byDeal,importedAt:new Date().toISOString(),portableDemo:true}));
+    const infrastructure=rows.map(r=>JSON.parse(r.payload).infrastructure).filter(Boolean);
+    if(infrastructure.length)dest.db.prepare('INSERT OR REPLACE INTO catalog_meta VALUES (?,?)').run('infrastructure',JSON.stringify({snapshotAt:infrastructure[0].snapshotAt,enriched:infrastructure.length,radius_m:3000,byFeature:infrastructure.reduce((a,v)=>{for(const k of Object.keys(v.nearby))a[k]=(a[k]||0)+1;return a;},{})}));
     dest.db.exec('COMMIT');
   }catch(error){dest.db.exec('ROLLBACK');throw error;}
   console.log(`Portable demo: ${rows.length} historical offers, ${target}`);
 }finally{source.close();dest.close();}
-await writeFile(path.join(target,'README.md'),`# Простор — MVP для демонстрации\n\nНужен Node.js 24+. Запуск: двойной щелчок start.cmd или npm start. Затем http://127.0.0.1:3100.\n\nВ комплекте 120 реальных исторических предложений (по 60 покупка/аренда, однокомнатные), выбранных по возрастанию цены для воспроизводимости. Это ограниченная учебная выборка, не обзор рынка. Актуальность не проверена, описания продавцов исключены. Фотографии загружаются с исходных CDN и требуют интернета; при ошибке есть иллюстрация. Цены и характеристики не выдуманы.\n\nРаботают поиск по фразе (правила, LLM ещё нет), обычные фильтры, карточка, избранное, сортировка. API-ключи и платные запросы не нужны. Большая обложка — AI-иллюстрация, не реальное объявление. После запуска локально создаётся журнал поисков и действий. Перед дальнейшей пересылкой не включать созданный activity.sqlite.\n\nПримеры: «Однушка до 15 млн рядом с метро», «Снять однокомнатную до 60 тыс», «Однушка до 1 руб» (пустая выдача).\n`,'utf8');
+await writeFile(path.join(target,'README.md'),`# Простор — MVP для демонстрации\n\nНужен Node.js 24+. Запуск: двойной щелчок start.cmd или npm start. Затем http://127.0.0.1:3100.\n\nВ комплекте 120 реальных исторических предложений (по 60 покупка/аренда, однокомнатные), выбранных по возрастанию цены для воспроизводимости. Это ограниченная учебная выборка, не обзор рынка. Актуальность не проверена, описания продавцов исключены. Фотографии загружаются с исходных CDN и требуют интернета; при ошибке есть иллюстрация. Цены и характеристики не выдуманы.\n\nРаботают поиск по фразе (правила, локальная модель в эту сборку не включена), обычные фильтры, инфраструктура с расстояниями по прямой и ссылками OSM, карточка, избранное, сортировка. OSM: © OpenStreetMap contributors, ODbL (https://www.openstreetmap.org/copyright). Рейтинг RAEX — только проверенная часть списка, не общая оценка школы. API-ключи и платные запросы не нужны. Большая обложка — AI-иллюстрация, не реальное объявление. После запуска локально создаётся журнал поисков и действий. Перед дальнейшей пересылкой не включать созданный activity.sqlite.\n\nПримеры: «Однушка до 15 млн рядом с метро», «Снять однокомнатную до 60 тыс», «Однушка до 1 руб» (пустая выдача).\n`,'utf8');

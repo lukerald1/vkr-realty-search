@@ -1,14 +1,19 @@
 {
   "name": "vkr-realty-search",
-  "version": "0.4.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "description": "Прототип поиска недвижимости на естественном языке",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "start": "node --env-file-if-exists=.env apps/server.mjs",
     "dev": "node --env-file-if-exists=.env --watch apps/server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "import:data": "node scripts/import-data.mjs"
+    "import:data": "node scripts/import-data.mjs",
+    "enrich:infrastructure": "node scripts/enrich-infrastructure.mjs",
+    "evaluate:extractor": "node --env-file-if-exists=.env scripts/evaluate-extractor.mjs",
+    "enrich:locations": "node scripts/enrich-locations.mjs"
   }
 }

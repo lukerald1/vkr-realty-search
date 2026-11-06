@@ -1,0 +1,14 @@
+[
+  {"id":"sale-budget","query":"Однушка до 12,5 миллионов","hard":{"deal_type":"sale","rooms":1,"price_max":12500000}},
+  {"id":"rent-budget","query":"Снять двушку до 70 тысяч","hard":{"deal_type":"rent","rooms":2,"price_max":70000}},
+  {"id":"studio-zero","query":"Купить студию до 8 млн","hard":{"rooms":0,"price_max":8000000}},
+  {"id":"floor-negation","query":"Снять однушку не на первом и не на последнем этаже","hard":{"deal_type":"rent","rooms":1,"floor_not_first":true,"floor_not_last":true}},
+  {"id":"metro-walk","query":"Квартира до 10 минут пешком до метро","hard":{"metro_max":10,"metro_mode_f":"walk"}},
+  {"id":"minimum-area","query":"Квартира от 45 м² до 15 млн","hard":{"area_min":45,"price_max":15000000}},
+  {"id":"balcony","query":"Квартира с балконом","hard":{"balcony_required":true}},
+  {"id":"no-balcony","query":"Квартира без балкона","hard":{"balcony_required":false}},
+  {"id":"soft-kitchen","query":"Однушка до 12 млн, желательно большая кухня","hard":{"rooms":1,"price_max":12000000},"soft":["kitchen"]},
+  {"id":"unsupported-quiet","query":"Квартира, желательно с тихим двором","hard":{},"unknown":true},
+  {"id":"outside-scope","query":"Купить квартиру в Мурино","hard":{},"outsideScope":true},
+  {"id":"metro-soft","query":"Однушка, желательно рядом с метро","hard":{"rooms":1},"soft":["metro"]}
+]

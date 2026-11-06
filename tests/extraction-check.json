@@ -1,0 +1,10 @@
+[
+  {"id":"check-rent","query":"Для аренды ищу двухкомнатную квартиру не дороже 85 тысяч рублей, не последний этаж","hard":{"deal_type":"rent","rooms":2,"price_max":85000,"floor_not_last":true}},
+  {"id":"check-sale-area","query":"Купить трёшку от 65 м² до 17,2 млн","hard":{"deal_type":"sale","rooms":3,"area_min":65,"price_max":17200000}},
+  {"id":"check-any-rooms","query":"Нужна квартира не дороже 11 миллионов рублей","hard":{"price_max":11000000}},
+  {"id":"check-floor-words","query":"Хочу снять квартиру не выше третьего этажа","hard":{"deal_type":"rent","floor_max":3}},
+  {"id":"check-room-words","query":"Ищу квартиру: две комнаты, максимум 18000000 рублей","hard":{"rooms":2,"price_max":18000000}},
+  {"id":"check-preferences","query":"Нужна студия, желательно просторная кухня и метро поближе","hard":{"rooms":0},"soft":["kitchen","metro"]},
+  {"id":"check-outside","query":"Снять квартиру в Кудрово","hard":{"deal_type":"rent"},"outsideScope":true},
+  {"id":"check-mandatory-unknown","query":"Обязательно тихая квартира","hard":{},"unknown":true,"needsClarification":true}
+]

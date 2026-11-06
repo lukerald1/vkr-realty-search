@@ -57,3 +57,16 @@ test('API params support zero rooms and never include unsupported conditions',()
 test('a different deal, city or property type is not silently replaced',()=>{
   for(const query of ['Снять квартиру','Квартира в Москве','Купить дом']) assert.equal(rankListings([listing()],parseQuery(query)).length,0);
 });
+test('manual criteria reject unsupported keys and non-scalar numeric values',()=>{
+  for(const filters of [{quiet:true},{rooms:[]},{price_max:{}},{metro_max:'   '},{realty_type:'office'}])assert.throws(()=>buildSearchProfile('',filters,'filters'));
+  const house=buildSearchProfile('',{realty_type:'house'},'filters');
+  assert.equal(house.hard.realty_type,'house');assert.deepEqual(rankListings([listing()],house),[]);
+});
+test('mandatory unverified criteria and ambiguous room counts require clarification',()=>{
+  for(const query of ['Обязательно тихая квартира','Метро обязательно рядом','Однушка или двушка']){
+    const p=buildSearchProfile(query);assert.equal(p.needsClarification,true);assert.deepEqual(rankListings([listing()],p),[]);
+  }
+  assert.equal(buildSearchProfile('Не обязательно тихая квартира').needsClarification,false);
+  assert.equal(buildSearchProfile('Обязательно до 10 минут пешком до метро').needsClarification,false);
+  assert.equal(buildSearchProfile('Однушка или двушка',{rooms:1}).needsClarification,false);
+});

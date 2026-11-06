@@ -4,24 +4,32 @@ import {existsSync} from 'node:fs';
 import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
-import {buildSearchProfile, rankListings} from './search.mjs';
+import {rankListings} from './search.mjs';
 import {demoListings} from './demo.mjs';
 import {createMetrapi, ProviderError} from './metrapi.mjs';
 import {openCatalog} from './catalog.mjs';
+import {areas,setMetroNames} from './locations.mjs';
 import {openActivity} from './activity.mjs';
 import {spbScope} from './geography.mjs';
+import {createExtractor,createOllama} from './extractor.mjs';
+import {savedListings,validateSavedRequest} from './saved.mjs';
 
 const root = fileURLToPath(new URL('../',import.meta.url));
 const publicRoot = path.join(root,'apps','public');
 const mode = process.env.DATA_MODE || 'snapshot';
-if (!['snapshot','metrapi'].includes(mode)) throw new Error('DATA_MODE must be snapshot or metrapi');
+if (!['snapshot','metrapi','demo'].includes(mode)) throw new Error('DATA_MODE must be snapshot, demo or metrapi');
+const extractorMode=process.env.EXTRACTOR_MODE||'rules';
+const extractor=createExtractor({mode:extractorMode,model:process.env.OLLAMA_MODEL||null,
+  ...(extractorMode==='ollama'?{extract:createOllama({model:process.env.OLLAMA_MODEL,baseUrl:process.env.OLLAMA_URL||'http://127.0.0.1:11434',...(process.env.OLLAMA_THINK===undefined?{}:{thinking:process.env.OLLAMA_THINK==='1'})})}:{})});
 let listings = demoListings, dataset = 'demo', snapshotDate = null;
 const catalogPath=path.resolve(root,process.env.CATALOG_PATH||'data/catalog.sqlite');
 const catalog=mode==='snapshot'&&existsSync(catalogPath)?openCatalog(catalogPath):null;
 const imported=catalog?.metadata();
 const filterFacets=catalog?.facets()||{};
+setMetroNames(filterFacets.metro||[]);
+filterFacets.area_options=areas.map(({id,label,kind,members})=>({id,label,kind,members}));
 await mkdir(path.join(root,'data'),{recursive:true});
-const activity=openActivity(path.join(root,'data','activity.sqlite'));
+const activity=openActivity(path.resolve(root,process.env.ACTIVITY_PATH||'data/activity.sqlite'));
 if (mode === 'snapshot' && !catalog) {
   const snapshotPath = path.resolve(root,process.env.SNAPSHOT_PATH || 'test_spb_sale.jsonl');
   try {
@@ -34,10 +42,12 @@ if (mode === 'snapshot' && !catalog) {
 }
 const provider = createMetrapi({key:process.env.METRAPI_API_KEY});
 const metadata = () => ({mode: mode === 'metrapi' ? 'metrapi' : dataset,
+  geography:catalog?(()=>{const v=JSON.parse(catalog.db.prepare("SELECT value FROM catalog_meta WHERE key='geography'").get()?.value||'null');return v?{snapshotAt:v.snapshotAt,resolved:v.resolved,unresolved:v.unresolved,places:v.places}:null;})():null,
+  infrastructure:catalog?(()=>{const v=JSON.parse(catalog.db.prepare("SELECT value FROM catalog_meta WHERE key='infrastructure'").get()?.value||'null');return v?{snapshotAt:v.snapshotAt,enriched:v.enriched,byFeature:v.byFeature,radius_m:v.radius_m}:null;})():null,
   ...(catalog?{mode:'database'}:{}),
   total: mode === 'metrapi' ? null : imported?.accepted ?? listings.length, snapshotDate,
   byDeal:imported?.byDeal||null,importedAt:imported?.importedAt||null,
-  extractor:'rules', ranker:'rules', city:'Санкт-Петербург'});
+  extractor:extractorMode, ranker:'rules', city:'Санкт-Петербург'});
 const json = (res,status,data) => {res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};
 async function readJson(req) {
   let body = '';
@@ -60,8 +70,19 @@ const server = http.createServer(async(req,res) => {
       const session=cookie?.[1]||randomUUID();
       if(!cookie)res.setHeader('Set-Cookie',`prostor_session=${session}; HttpOnly; SameSite=Strict; Path=/; Max-Age=2592000`);
       if (url.pathname === '/api/meta' && req.method === 'GET') return json(res,200,metadata());
+      if (url.pathname === '/api/health' && req.method === 'GET') {
+        return json(res,200,{status:'ok',...metadata()});
+      }
       if (url.pathname === '/api/filters' && req.method === 'GET') return json(res,200,{facets:filterFacets});
       if (url.pathname === '/api/history' && req.method === 'GET') return json(res,200,{searches:activity.history(session)});
+      if(url.pathname==='/api/saved'&&req.method==='POST'){
+        const options=validateSavedRequest(await readJson(req));
+        if(mode==='metrapi')return json(res,503,{error:'Избранное доступно в режиме локального каталога.'});
+        const raw=catalog?catalog.byIds(options.ids):dataset==='demo'?listings:listings.filter(item=>spbScope(item)==='accepted');
+        const result=savedListings(raw,options);
+        const profile={hard:{city:'spb',deal_type:'sale',realty_type:'flat'},soft:[],unknown:[],notes:[],searchMode:'filters',extractor:'rules',coverage:'Сохранённые объявления покупки и аренды из доступного каталога.'};
+        return json(res,200,{results:result.results,profile,searchId:null,meta:{...metadata(),extractor:'rules',totalMatched:result.total,offset:options.offset,limit:24,hasMore:result.hasMore}});
+      }
       if (url.pathname === '/api/events' && req.method === 'POST') {
         const body=await readJson(req);
         const ok=Boolean(body&&activity.event(session,body));
@@ -70,13 +91,13 @@ const server = http.createServer(async(req,res) => {
       if (url.pathname === '/api/search' && req.method === 'POST') {
         const body = await readJson(req);
         if (!body || typeof body.query !== 'string' || body.query.length > 2000) return json(res,400,{error:'Запрос должен быть строкой до 2000 символов'});
-        let profile;
-        try {profile = buildSearchProfile(body.query,body.filters || {},body.searchMode??'text');} catch {return json(res,400,{error:'Некорректные фильтры или способ поиска'});}
         const offset=Number(body.offset??0),limit=24,sort=body.sort||'relevance';
         if(!Number.isSafeInteger(offset)||offset<0||offset>100000||!['relevance','price','area'].includes(sort))return json(res,400,{error:'Некорректная страница или сортировка'});
         if(body.ids!==undefined&&(!Array.isArray(body.ids)||body.ids.length>500||body.ids.some(id=>typeof id!=='string'||id.length>300)))return json(res,400,{error:'Некорректный список избранного'});
+        const profile=await extractor({query:body.query,filters:body.filters??{},searchMode:body.searchMode??'text',session});
         let result,fetchedAt=null;
-        if(catalog) result=catalog.search(profile,{offset,limit,sort,ids:body.ids??null});
+        if(profile.needsClarification)result={results:[],total:0,hasMore:false};
+        else if(catalog) result=catalog.search(profile,{offset,limit,sort,ids:body.ids??null});
         else {
           const upstream=mode==='metrapi'&&!profile.outsideScope?await provider(profile.hard):{items:profile.outsideScope?[]:listings,hasMore:false};
           fetchedAt=upstream.fetchedAt||null;
@@ -89,7 +110,7 @@ const server = http.createServer(async(req,res) => {
           result={results:ranked.slice(offset,offset+limit),total:ranked.length,hasMore:offset+limit<ranked.length,providerHasMore:upstream.hasMore};
         }
         const searchId=body.context==='preview'?null:activity.search(session,body.query,profile,result.total,result.results,offset);
-        return json(res,200,{profile,results:result.results,searchId,meta:{...metadata(),hasMore:result.hasMore,providerHasMore:result.providerHasMore||false,totalMatched:result.total,offset,limit,fetchedAt}});
+        return json(res,200,{profile:{...profile,areaOptions:filterFacets.area_options},results:result.results,searchId,meta:{...metadata(),extractor:profile.extractor,hasMore:result.hasMore,providerHasMore:result.providerHasMore||false,totalMatched:result.total,offset,limit,fetchedAt}});
       }
       return json(res,404,{error:'Неизвестный маршрут'});
     }
@@ -106,4 +127,12 @@ const server = http.createServer(async(req,res) => {
 });
 const host=process.env.HOST || '127.0.0.1';
 if(host !== '127.0.0.1' && host !== 'localhost') throw new Error('Для сетевого запуска сначала добавьте аутентификацию и ограничение запросов.');
-server.listen(Number(process.env.PORT || 3100),host,()=>console.log(`Local: http://${host}:${process.env.PORT || 3100} (${mode === 'metrapi' ? 'Metrapi' : catalog?'database':dataset})`));
+server.on('error',error=>{
+  console.error(error.code==='EADDRINUSE'?'Порт занят. Закройте предыдущий экземпляр или задайте другой PORT.':'Не удалось запустить локальный HTTP-сервер.');
+  catalog?.close();activity.close();process.exit(1);
+});
+server.listen(Number(process.env.PORT || 3100),host,()=>console.log(`Local: http://${host}:${server.address().port} (${mode === 'metrapi' ? 'Metrapi' : catalog?'database':dataset})`));
+for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>{
+  server.close(()=>{catalog?.close();activity.close();process.exit(0);});
+  server.closeAllConnections();
+});
