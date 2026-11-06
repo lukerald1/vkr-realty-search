@@ -1,0 +1,107 @@
+{
+  "date": "2026-11-06",
+  "source": "Local Prostor 0.7, Qwen3 8B via Ollama; browser screenshots",
+  "edited": false,
+  "files": [
+    {
+      "file": "01-natural-query-typo.jpg",
+      "description": "Живой запрос с опечаткой «пажалуйста»: локальная Qwen3, 2978 вариантов.",
+      "sha256": "9c99d0e1cfca96a6756ebcb9d3692a4a913ae7afa2bace42b2f45d5f55588440"
+    },
+    {
+      "file": "01b-natural-query-error.jpg",
+      "description": "Неудачный длинный запрос с «комисии»: показана ошибка модели, выдачи нет.",
+      "sha256": "9a871b311b490522385e8460ccea2926c6023d7ae05f2f9394493b6873308df1"
+    },
+    {
+      "file": "01c-natural-query-error.jpg",
+      "description": "Ещё один неудачный разговорный запрос: показана ошибка модели.",
+      "sha256": "f4eb6369cda485a1ee6432ced0a92dd9e285f4ff1ed94a1b2b557c5741699314"
+    },
+    {
+      "file": "02-rent-areas.jpg",
+      "description": "Аренда: два района, исключение, животные, отсутствие комиссии — 89 вариантов.",
+      "sha256": "be1c32d598b6e611d19a0747a77d1257d8ead83701bae8cc41bb8265cf2e8188"
+    },
+    {
+      "file": "03-territory-filters.jpg",
+      "description": "Мультивыбор территорий и исключений.",
+      "sha256": "23b1b4c0cf23ca5b55ecbb24672f44d7ea104545356f3fb779d13645f415bc4b"
+    },
+    {
+      "file": "04-rent-and-infrastructure-filters.jpg",
+      "description": "Условия аренды: животные, дети, комиссия, залог.",
+      "sha256": "abb37fa28c25ef0c6f1513715987a027af95473a4da1364c515f48eb7972b82a"
+    },
+    {
+      "file": "05-infrastructure-filters.jpg",
+      "description": "Категории инфраструктуры и пределы расстояния.",
+      "sha256": "6d6a228c9add0252f437ef4a0ab2fcf5bbce1038f41af5b807fa675b8fbfa665"
+    },
+    {
+      "file": "05a-infrastructure-school-clinic.jpg",
+      "description": "Фильтры школы, детсада, поликлиники и парка.",
+      "sha256": "47c6b3b3458ea25514f7dc04779975810d69e223b06e531820b341ba54514dd7"
+    },
+    {
+      "file": "06-rent-details.jpg",
+      "description": "Карточка: условия собственника; неизвестные поля не заменены предположениями.",
+      "sha256": "b4d2f76e933e0c9e8a221eb1faae11ea9d1898c23fc0d0208de77e7931482494"
+    },
+    {
+      "file": "07-sale-moskovsky.jpg",
+      "description": "Покупка в Московском районе — 281 вариант.",
+      "sha256": "09843d17b1ddaaa6efd1a507f8e6479cd355ab1b254fc7d75ea3752b50770f1f"
+    },
+    {
+      "file": "08-favorites-sale-rent.jpg",
+      "description": "Общее избранное: покупка и аренда в одной подборке.",
+      "sha256": "101ae12b52366286a1f7f48392a632833a9d826c4352864d9c6d776be8777f84"
+    },
+    {
+      "file": "09-search-history.jpg",
+      "description": "История с реальными запросами и повторным поиском.",
+      "sha256": "ff7ec4d77ce4c5c0ca0a69eace19bc0b17266db88c151376a4add720d9d39b9f"
+    },
+    {
+      "file": "10-school-search.jpg",
+      "description": "Школа из проверенной части RAEX в пределах 500 м, поиск по фильтрам.",
+      "sha256": "aecdab4fe30cb39c95d8fb711025f21041a0cc4d37d1366f60941394938630eb"
+    },
+    {
+      "file": "10a-school-rating.jpg",
+      "description": "Бейдж RAEX, расстояние до территории и ссылка на источник.",
+      "sha256": "03060a86a5ae9f85b9a446966d62b44ed76b81dcb11dd9bb246f0c60c2223441"
+    },
+    {
+      "file": "11-clinic-and-park.jpg",
+      "description": "Поликлиника и парк: расстояния и разные способы измерения.",
+      "sha256": "219241f7dede79c0bc0818b9f0b188d3961ae8bacd57d39a7e1eea8e096cc0d7"
+    },
+    {
+      "file": "12-north-zone-exclusion.jpg",
+      "description": "Зона «север» с исключением Выборгского района — 783 варианта.",
+      "sha256": "1b5808d544d614dd712d10ac858872dba60ef9eded4a0ba959ac1bf5a86e6d82"
+    },
+    {
+      "file": "13-metro-alternatives.jpg",
+      "description": "Аренда у любой из двух станций — 85 вариантов с выбранным бюджетом.",
+      "sha256": "14c0de05b40e4052291f40c001427bbce7b6c5bd55a75d6e9ce92fda451dcf7e"
+    },
+    {
+      "file": "14-empty-results.jpg",
+      "description": "Бюджет 1 рубль: пустая выдача, условия сохранены.",
+      "sha256": "f0ed2cb9b39631deed9865573e3b398a0987aaf8a61576df016b7421e76e5d1b"
+    },
+    {
+      "file": "15-natural-school-priority.jpg",
+      "description": "Естественный запрос покупки: приоритет школы RAEX и парк — 26 вариантов.",
+      "sha256": "f98bff39ee8d01d2699ba71925e3fa2238db29ab84586b1284383307655b57c7"
+    },
+    {
+      "file": "16-school-priority-cards.jpg",
+      "description": "Результат этого запроса: школьный рейтинг, парк и причины подбора.",
+      "sha256": "f4137755a23fe5b9b747721ed40b60d38e27759da82f3637f1733df2091c53be"
+    }
+  ]
+}
